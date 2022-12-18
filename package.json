@@ -1,0 +1,25 @@
+{
+  "name": "serv-ex",
+  "version": "0.0.1",
+  "description": "Это тестовый проект на nodeJS, впоследствии я хочу его превратить в сервер RAZMETKA",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index",
+    "dev": "nodemon index"
+  },
+  "keywords": [
+    "razmetka",
+    "metka",
+    "examples",
+    "test"
+  ],
+  "author": "Ilya Petrov <ilya.petrov.m@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "mariadb": "^3.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}

@@ -1,0 +1,280 @@
+<!-- 
+    TODO реализовать аутентификацию
+    <?php require_once __DIR__.'/boot.php'; 
+   if (!check_auth()) { 
+      header('Location: login.php');
+   }
+?> -->
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous"> 
+    <link href="tabulator/css/tabulator.min.css" rel="stylesheet">
+   <script type="text/javascript" src="tabulator/js/tabulator.min.js"></script> 
+   
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+
+</head>
+<body> 
+   <div class="container-fluid">
+      <div class=row>
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+             <div class="container-fluid">
+               <a class="navbar-brand">Архив экспедиции - Файлы</a>
+               
+               <!-- TODO menu <?php include 'menu.php'; ?>  -->
+               
+                <div class="d-flex">
+                  <input id=srch class="form-control me-2" type="search" placeholder="Введите фразу" value=''>
+                  <button class="btn btn-outline-success" onclick="query()">Поиск</button>
+                </div>
+            </div>
+          </nav>
+       </div>
+       
+       <div class='row'>
+            <div  class="col">
+               <div id="example-table" class="embed-responsive embed-responsive-16by9"></div>
+            </div>
+        </div>
+    </div>
+</body>
+    
+    
+   <script>
+   const icon_download = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"></path></svg>';
+   
+   const icon_comment = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill-rule="evenodd" d="M10.25 2a8.25 8.25 0 105.28 14.59l5.69 5.69a.75.75 0 101.06-1.06l-5.69-5.69A8.25 8.25 0 0010.25 2zM3.5 10.25a6.75 6.75 0 1113.5 0 6.75 6.75 0 01-13.5 0z"></path></svg>';
+   const icon_play = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M9.5 15.584V8.416a.5.5 0 01.77-.42l5.576 3.583a.5.5 0 010 .842l-5.576 3.584a.5.5 0 01-.77-.42z"></path><path fill-rule="evenodd" d="M12 2.5a9.5 9.5 0 100 19 9.5 9.5 0 000-19zM1 12C1 5.925 5.925 1 12 1s11 4.925 11 11-4.925 11-11 11S1 18.075 1 12z"></path></svg>';
+       const icon_trash = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill-rule="evenodd" d="M16 1.75V3h5.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H8V1.75C8 .784 8.784 0 9.75 0h4.5C15.216 0 16 .784 16 1.75zm-6.5 0a.25.25 0 01.25-.25h4.5a.25.25 0 01.25.25V3h-5V1.75z"></path><path d="M4.997 6.178a.75.75 0 10-1.493.144L4.916 20.92a1.75 1.75 0 001.742 1.58h10.684a1.75 1.75 0 001.742-1.581l1.413-14.597a.75.75 0 00-1.494-.144l-1.412 14.596a.25.25 0 01-.249.226H6.658a.25.25 0 01-.249-.226L4.997 6.178z"></path><path d="M9.206 7.501a.75.75 0 01.793.705l.5 8.5A.75.75 0 119 16.794l-.5-8.5a.75.75 0 01.705-.793zm6.293.793A.75.75 0 1014 8.206l-.5 8.5a.75.75 0 001.498.088l.5-8.5z"></path></svg>';
+    /**
+     * @brief Проверка существования файла на сервере
+     * @param [in] String url адрес файла на сервере
+     * @return true, если файл существует, иначе false.
+     */  
+       function fileExists(url) {
+            var http = new XMLHttpRequest();
+           
+            if (url.length === 0) {
+                return false;
+            } else {
+                try{
+                http.open('HEAD', url,false);
+                http.send();
+                return (http.status === 200);
+                }catch(e){
+                    console.log(e);
+                    return (http.status === 200);
+                }
+            }
+            return false;
+        }
+        
+        /**
+       *
+       */
+       function getFilePath(filename, useProxy){
+           const proxyFolder = './uploads/proxy/'; // TODO host
+           const cloudFolder = './uploads/';
+        
+           if (useProxy && fileExists(proxyFolder + filename)) {return proxyFolder + filename;}
+           return cloudFolder + filename;
+       }
+       
+       /**
+       *
+       */
+       function openFile(event, name){
+           //getFilePath
+           window.open(getFilePath(name),"_blank");
+          //previewVideo.src = getFilePath(name);
+           event.stopPropagation();
+           console.log(event,name);
+       }
+       
+      /**
+       * MAIN CODE -  начало основного кода
+       */
+      var quer1 = "SELECT f.id AS id, f.path AS path, f.tags AS tags," +
+               "GROUP_CONCAT( CONCAT( inf.last_name,' ', inf.first_name,' ', inf.middle_name ) separator '; ') AS informants, "+
+               "GROUP_CONCAT( m.describtion separator '; ' ) AS marks, " +
+               "f.`оператор` AS author, " +
+               "f.date_created AS `date_created`, f.date_updated AS date_updated, " +
+               "f.old_filename AS old_filename, "+
+               "f.`кто загрузил` AS who_created"+
+           " FROM ((( files f " +
+                       " LEFT JOIN files_to_informants AS conn ON (conn.file_id = f.id) ) " +
+                       " LEFT JOIN informants `inf` ON (conn.inf_id = inf.id)) "+
+                       " LEFT JOIN marks m ON (m.file_id = f.id) ) "+
+            " GROUP BY f.id "+
+           " ORDER BY  f.id DESC";
+           
+    /* 
+    * Создание редактора даты
+    * cell - the cell component for the editable cell
+    * onRendered - function to call when the editor has been rendered
+    * success - function to call to pass thesuccessfully updated value to Tabulator
+    * cancel - function to call to abort the edit and return to a normal cell
+    */
+   var dateEditor = function(cell, onRendered, success, cancel){
+       //create and style input
+       var cellValue = cell.getValue(); //uxon.DateTime.fromFormat(cell.getValue(), "YYYY-MM-DD hh:mm:ss").toFormat("YYYY-MM-DD hh:mm:ss"),
+       input = document.createElement("input");
+       //console.log(cell.getValue(),cellValue);
+
+       input.setAttribute("type", "datetime-local");
+
+       input.style.padding = "4px";
+       input.style.width = "100%";
+       input.style.boxSizing = "border-box";
+
+       input.value = cellValue;
+
+       onRendered(function(){
+           input.focus();
+           input.style.height = "100%";
+       });
+
+       function onChange(){
+          let fmt = luxon.DateTime.fromISO(input.value).toFormat("yyyy-MM-dd HH:mm:ss");
+          console.log( cell.getValue(), 
+                       input.value, 
+                       fmt);
+           if(input.value != cellValue){
+               success(fmt); //luxon.DateTime.fromFormat(input.value, "YYYY-MM-DDThh:mm").toFormat("YYYY-MM-DD hh:mm:ss")
+           }else{
+               cancel();
+           }
+       }
+
+       //submit new value on blur or change
+       input.addEventListener("blur", onChange);
+
+       //submit new value on enter
+       input.addEventListener("keydown", function(e){
+           if(e.keyCode == 13){
+               onChange();
+           }
+
+           if(e.keyCode == 27){
+               cancel();
+           }
+       });
+
+       return input;
+   };
+   
+   
+      var table = new Tabulator("#example-table", {
+         height:"800px",
+         layout:"fitColumns",
+         placeholder:"Введите поисковую фразу",
+         ajaxURL:'sql',
+         ajaxConfig:"POST", //ajax HTTP request type
+         ajaxParams: {data: quer1},
+         ajaxContentType: 'json',
+         layout:"fitColumns",
+           columns:[
+              {title: "Просмотр",
+                  formatter:function(){return icon_play;}, 
+                  width:     "20", 
+                  hozAlign:  "center",  
+                  cellClick: function(e, cell){ openFile(e, cell.getRow().getData().path.replace(/^.*[\\\/]/, '', true));} 
+               },
+               {title: "Опись", 
+                     field:     "marks",  
+                     width:     '20', 
+                     hozAlign:  "center",
+                     formatter: function(){ return icon_comment; }, 
+                     cellClick: function(e, cell){ window.open('marks.php?file_id='+cell.getRow().getData().id); }
+               },
+               {title:"id",            
+                     field:"id",          
+                     formatter:"plaintext", 
+                     width:"100", 
+                     hozAlign:"center",    
+               },
+               {title:"Путь",          
+                     field:      "path",        
+                     formatter:  "plaintext", 
+                     hozAlign:   "right" 
+               },
+               {title:"Тэги",          
+                     field:      "tags",        
+                     formatter:  "textarea",  
+                     editor:     "textarea"
+                     },
+               {title:"Информанты",    
+                     field:      "informants",  
+                     formatter:  "plaintext" 
+                     },
+               {title:"Оператор",      
+                     field:      "author",      
+                     formatter:  "plaintext", 
+                     editor:     "input"
+                     },
+               {title:"Дата создания", 
+                     field:      "date_created", 
+                     formatter:  "datetime", 
+                     width:      "100", 
+                     hozAlign:   "center",  
+                     formatterParams:{ outputFormat:"dd MMM HH:mm"}, 
+                     editor:     dateEditor, 
+                     cellEdited: function(cell){
+                        let q = `UPDATE files SET date_created='${cell.getValue()}' WHERE id=${cell.getRow().getData().id}`;
+                        console.log("edited:", q);
+                     }
+               },
+              
+               {title:"Дата редактирования", field:"date_updated", formatter:"datetime", width:"100", hozAlign:"center", formatterParams:{ outputFormat:"dd MMM HH:mm" }},
+               {title:"Старое название",     field:"old_filename", formatter:"plaintext" },
+               {title:"Кто загрузил",        field:"who_created",  formatter:"plaintext" },
+            {title: "Скачать оригинал",
+                  formatter:function(){return icon_download;}, 
+                  width:     "20", 
+                  hozAlign:  "center",  
+                  cellClick: function(e, cell){ openFile(e, cell.getRow().getData().path.replace(/^.*[\\\/]/, '', false));} 
+               },
+               {formatter:function(){return icon_trash;}, 
+                  width:"50", 
+                  hozAlign:"center", 
+                  cellClick:function(e, cell){ console.log(cell._cell.row.data); } 
+               }
+           ]
+      });
+       
+       srch.addEventListener('keydown', function(e){ if (e.code == 'Enter') srch.blur(), query();  });
+      
+       /**
+        * @brief Запрос к БД. 
+        * @return Обновляет таблицу на странице.
+        */
+       function query() {
+         var having = "";
+         if (srch.value != "") {
+            having = " HAVING (tags LIKE '%"+srch.value+"%' OR marks LIKE '%"+srch.value+"%' OR informants LIKE '%"+srch.value+"%'  ) ";
+         }
+        var quer = "SELECT f.id AS id, f.path AS path, f.tags AS tags," +
+                        "GROUP_CONCAT( CONCAT( inf.last_name,' ', inf.first_name,' ', inf.middle_name ) separator '; ') AS informants, "+
+                        "GROUP_CONCAT( m.describtion separator '; ' ) AS marks, " +
+                        "f.`оператор` AS author, " +
+                        "f.date_created AS `date_created`, f.date_updated AS date_updated, " +
+                        "f.old_filename AS old_filename, "+
+                        "f.`кто загрузил` AS who_created"+
+                    " FROM ((( files f " +
+                                " LEFT JOIN files_to_informants AS conn ON (conn.file_id = f.id) ) " +
+                                " LEFT JOIN informants `inf` ON (conn.inf_id = inf.id)) "+
+                                " LEFT JOIN marks m ON (m.file_id = f.id) ) "+
+                     " GROUP BY f.id "+
+                       having +
+                    " ORDER BY  f.id DESC";
+         table.setData("server/sqlClient.php?q="+quer);
+      }
+      
+    
+   </script>
+</html>
