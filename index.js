@@ -4,13 +4,14 @@ const path = require('path')
 const mysql = require('mariadb')
 const dbConfig  = require('./config')
 const chalk = require('chalk')
+const url = require('url')
 
 const PORT = 3000
 
 const sqlPool = mysql.createPool(dbConfig)
 
 const server = http.createServer((req, res) => {
-
+   
 /****************************
  * Перехватываем sql-запросы
 *********************************/
@@ -32,6 +33,39 @@ const server = http.createServer((req, res) => {
 
             
             
+        })
+        return
+    }  
+
+    /********************************************************
+     * Обработка входа пользователя под логином и паролем
+     ********************************************************/
+    if(req.url === '/do_login'){
+        req.on('data', (postData) =>{ 
+
+            // Принимаем данные из POST запроса
+            const { username, password} = url.parse('/?'+postData,true).query // Парсим POST запрос формата host/?query1=val&query2=val...
+            console.log('\npostData: \n\t', { username, password} )
+
+            query = `SELECT pass,email FROM users WHERE email like ${username} LIMIT 1;`
+            sqlPool.getConnection()
+                .then(sqlConn => {
+                    sqlConn.query(query).then((rows) => {
+                       console.log('Получено строк: ', (rows).length)
+                            if ((rows).length>0){
+                                res.writeHead(307,{
+                                    'Location': '/', 
+                                    'Set-Cookie':[`user=${username}; Same-Site:Strict; Max-Age:5`]
+                                })
+                                res.end()
+                            }else{
+                                console.log('Пользователь не найден')
+                            }
+                        
+                    }).catch((err)=>{
+                        console.log('Ошибка!', err) // TODO создать таблицу users
+                    })
+                })              
         })
         return
     }  
@@ -62,8 +96,25 @@ const server = http.createServer((req, res) => {
     fs.readFile(filePath, (err,data) => {
         if (!err){
             console.log( chalk.greenBright(filePath + '\t-->\tOK '))
-            res.writeHead(200, {'Content-Type': contentType})
-            res.end(data)
+
+            if (!req.headers.cookie){
+                console.log('Куки пусты => Необходимо авторизовать пользователя!')
+                // Возвращаем страницу входа
+                fs.readFile(__dirname+'/public/login.html', (err,data) =>{
+                    if(!err){
+                        res.writeHead(200,{'Content-Type': contentType})
+                        res.end(data)
+                    }else{
+                        res.writeHead(500) 
+                        res.end()
+                    }
+                })
+            }else{
+                res.writeHead(200, {
+                    'Content-Type': contentType
+                })
+                res.end(data)
+            }
         }
         else{
             console.log( chalk.red(filePath + '\t-->\terr '))

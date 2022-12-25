@@ -1,5 +1,5 @@
 {
-  "name": "serv-ex",
+  "name": "archive-ds-nodejs",
   "version": "0.0.1",
   "description": "Это тестовый проект на nodeJS, впоследствии я хочу его превратить в сервер RAZMETKA",
   "main": "index.js",
